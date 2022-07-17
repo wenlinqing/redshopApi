@@ -24,7 +24,6 @@ router.get('/getWxewm',(req,res,next)=>{
     let vmid = req.query.vmid||''
     let url=`https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=wxf1b20a65f4c39cfd&secret=8282bb1ce01f4dc045a93c8ea9edfd2a`;
     request(url, (error, response, body)=>{
-        // console.log('body=====',body)
         let lis = JSON.parse(body).access_token
         let baseUrl = `https://api.weixin.qq.com/wxa/getwxacode?access_token=${lis}`;
         let json = {
@@ -38,7 +37,6 @@ router.get('/getWxewm',(req,res,next)=>{
             form: JSON.stringify(json),
             encoding:null
         }, (err2, res2, body2) => {
-            // console.log('body2',err2, res2, body2)
             let base64Img = body2.toString('base64'); // base64图片编码字符串
             let dataBuffer = new Buffer(base64Img, 'base64');
             //保存到本地
@@ -68,10 +66,8 @@ function verifyToken(token) {
     let objs = {}
     jwt.verify(token.substring(7), 'red exchange shopping', (error, decoded) => {
       if (error) {
-        // console.log(error.message)
         return objs
       }
-      // console.log(decoded)
       objs = decoded
     })
     return objs
@@ -82,7 +78,6 @@ function sleep(times) {
     const exit = now.getTime() + times;
     while (true) {
         now = new Date();
-        // console.log('sleep')
         if (now.getTime() > exit) {
           return;
         }
@@ -104,7 +99,6 @@ router.post('/productList',(req,res,next)=>{
 
     let timestamp = moment().add(-2, 'minutes').format('YYYYMMDDHHmmss')
     let sign = md5('appid='+config.appid+'&timestamp='+timestamp+'&vmid='+vmid+'&secret='+config.secret).toUpperCase()
-    // console.log(timestamp,'sign==',sign)
 
     let url = 'http://soft.kivend.net/vm/query_mcdlist_vm?appid='+config.appid+'&timestamp='+timestamp+'&vmid='+vmid+'&sign='+sign
     request(url, (error, response, body)=>{
@@ -129,7 +123,6 @@ router.post('/productList',(req,res,next)=>{
         // console.log('sql===',sql)
         db.selectAll(sql, (err, result) => { // 查询是否存在
             if (err) {
-                // console.log(err)
                 return res.json({
                     code: '500',
                     msg: '系统错误'
@@ -137,9 +130,7 @@ router.post('/productList',(req,res,next)=>{
             }
             if (result.length>0) {
                 result.forEach((obj,ii)=>{
-                    // console.log('obj====',obj)
                     for (let ooo of itemlist){
-                        // console.log('ooo====',ooo)
                         if(obj.product_id==ooo.mcdcode){
                             obj.maxNum = ooo.stock
                             break
@@ -165,7 +156,6 @@ router.post('/wxgetOpenId', function (req, res, next) {
 	let headimg=req.query.headimg
 	let nickname=req.query.nickname
 	let gender=req.query.gender
-	//console.log(nickname, gender, headimg)
 
     let APP_URL='https://api.weixin.qq.com/sns/jscode2session'
     let APP_ID='wxf1b20a65f4c39cfd'   //小程序的app id ，在公众开发者后台可以看到
@@ -175,7 +165,6 @@ router.post('/wxgetOpenId', function (req, res, next) {
 		async.waterfall([
 			function(callback){
 				request(`${APP_URL}?appid=${APP_ID}&secret=${APP_SECRET}&js_code=${js_code}&grant_type=authorization_code`, (error, response, body)=>{
-					//console.log(JSON.parse(body))
 					let jsons = JSON.parse(body)
 					if(jsons.openid){
 						callback(null, jsons.openid)
@@ -189,7 +178,6 @@ router.post('/wxgetOpenId', function (req, res, next) {
 				})
 			},
 			function(openid,callback){
-				//console.log('openid=====',openid)
 				let sql = `select * from member where openid=? limit 1`;
 				sql = db.mysql.format(sql,openid);// 预防SQL注入
 				db.selectAll(sql, (err, result) => { // 查询是否存在
@@ -241,9 +229,9 @@ router.post('/wxgetOpenId', function (req, res, next) {
 			}
 		], function(err, results){
 			if (err) {
-			   console.log('err err err',err);
+			   console.log('err err err',err,moment().format('YYYY-MM-DD HH:mm:ss'));
 			}else{
-				console.log('results',results);
+				// console.log('results',results);
 			}
 		})
         
@@ -278,64 +266,6 @@ router.post('/regist', (req, res, next) => {
         token,
         msg: 'ok'
     })
-	return
-
-    /*let sql = `select * from member where openid=? limit 1`;
-    sql = db.mysql.format(sql,openid);// 预防SQL注入
-    db.selectAll(sql, (err, result) => { // 查询是否存在
-        if (err) {
-            // console.log(err)
-            return res.json({
-                code: '500',
-                msg: '系统错误'
-            })
-        }
-        if (result.length == 1) { // 存在就登录小程序
-            let token='Bearer '+jwt.sign({
-                openid,
-            }, 'red exchange shopping', {
-                expiresIn: '7d'
-            })
-
-            return res.json({
-                code: '200',
-                token,
-                msg: 'ok'
-            })
-        }else{
-            // 插入注册用户
-            let iddd = (moment().format('YYMMDDHHmm')).toString() + (Number(Math.random().toString().substr(3, 12)) + Date.now()).toString()
-            let saveDate = {
-                member_id: iddd,
-                openid: req.body.openid,
-                nickname: req.body.nickname,
-                headimg: req.body.headimg,
-                gender: req.body.gender,
-                create_time: moment().format('YYYY-MM-DD HH:mm:ss'),
-            }
-            db.insertData('member', saveDate, (err, data) => {
-                if (err) {
-                    // console.log(err)
-                    return res.json({
-                        code: '500',
-                        msg: '系统错误'
-                    })
-                }
-
-                let token='Bearer '+jwt.sign({
-                    openid,
-                }, 'red exchange shopping', {
-                    expiresIn: '7d'
-                })
-
-                return res.json({
-                    code: '200',
-                    token,
-                    msg: 'ok'
-                })
-            })
-        }
-    })*/
 })
 
 
@@ -419,7 +349,8 @@ router.post('/createOrder',(req,res,next)=>{
                 nickname: userInfo.nickname,
                 headimg: userInfo.headimg,
                 money: parseFloat(totalMoney/100),
-                create_time: moment().format('YYYY-MM-DD HH:mm:ss')
+                create_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+                machine_id:vmid
             }
             db.insertData('order', saveDate, (err, data) => {
                 if (err) {
@@ -448,7 +379,7 @@ router.post('/createOrder',(req,res,next)=>{
                         msg:'系统错误'
                     })
                 }
-                callback(null,'订单创建成功');
+                callback(null,`订单创建成功 ${orderNo}`);
                 return res.json({
                     code: '200',
                     msg: 'ok',
@@ -458,9 +389,9 @@ router.post('/createOrder',(req,res,next)=>{
         }
     ], function(err, results){
         if (err) {
-           console.log('err err err',err);
+           console.log('err err err',err, moment().format('YYYY-MM-DD HH:mm:ss'));
         }else{
-            console.log('results',results);
+            console.log('results',results, moment().format('YYYY-MM-DD HH:mm:ss'));
         }
     });
 })
@@ -518,6 +449,48 @@ function outProduct(account,vmid, huodaoObj){
     })
 }
 
+function doorOpenFun(ooo){
+    request.post({
+        url:`http://api.hahabianli.com/door/open`,
+        form:{
+            access_token: global.tokenObj.access_token,
+            device_id: ooo.vmid,
+            out_user_id: ooo.out_user_id,
+            open_type:'OUT'
+        }
+    }, (error, response, body)=>{
+        let jsons = JSON.parse(body) // body是string类型
+        if(jsons.code === 1){
+            console.log('红包转账后，开门操作--成功',moment().format('YYYY-MM-DD HH:mm:ss'))
+            /*{
+               "code": 1,
+               "info": "success",
+               "data": {
+                  "activity_id": "1801081740422435",
+                  "user_id": "01081609535A532751AB2DB"
+               }
+            }*/
+            let saveDate = {
+                activity_id: jsons.data.activity_id,
+                red_money: 50
+            }
+            db.insertData('hh_order', saveDate, (err, data) => {
+                if (err) {
+                    callback(new Error("红包转账后hh_order订单创建失败="+data.activity_id, moment().format('YYYY-MM-DD HH:mm:ss')));
+                    console.log('红包转账后hh_order订单创建失败',data.activity_id,moment().format('YYYY-MM-DD HH:mm:ss'))
+                }
+                // callback(null,productList);
+            })
+            return
+        }
+        if (jsons.code === 3003) {
+            console.log('红包转账后，开门操作--失败失败 网络错误', jsons)
+            console.log('开门操作--失败失败，重新开门',moment().format('YYYY-MM-DD HH:mm:ss'))
+            doorOpenFun(ooo)
+        }
+    })
+}
+
 router.get('/payCallback',(req,res,next)=>{
     const orderNo = req.query.n||''
     const vmid = req.query.e||''
@@ -528,82 +501,117 @@ router.get('/payCallback',(req,res,next)=>{
             msg:'参数错误'
         })
     }
-    
-    async.waterfall([
-        function(callback){
-            callback(null)
-            return res.json({
-                code:'200',
-                msg:'回调成功'
-            })
-        },
-        async function(callback){ // 调出货接口
-            let detailList = await getDBList(orderNo)
-            // console.log('detailList.length===',detailList)
-            for (let j = 0; j < detailList.length; j++) {
-                let item=detailList[j]
-                for (let i = 0; i < item.num; i++) {
-                    let huodaoList = await getHuoDaoList(vmid);
-                    let huodaoObj={}
-                    for (let i = 0; i < huodaoList.length; i++) {
-                        if (huodaoList[i].mcdcode==item.product_id && huodaoList[i].stocknum>0 ) {
-                            // console.log(huodaoList[i].mcdcode,'价格:',huodaoList[i].paprice ,'当前货道',huodaoList[i].pacode,'总库存', huodaoList[i].stocknum)
-                            huodaoObj['pacode']=huodaoList[i].pacode
-                            huodaoObj={...huodaoObj,...item}
-                            huodaoObj['money']=huodaoList[i].paprice
-                            // console.log('huodaoObj===============',huodaoObj)
-                            break
+    if (orderNo.slice(0,2) === 'VV') { // 哈哈机柜 红包转账后  调开门操作
+        res.json({
+            code:'200',
+            msg:'回调成功'
+        })
+        let out_user_id = orderNo.split('-')[0];
+        console.log('红包转账回调参数', orderNo, vmid, out_user_id, moment().format('YYYY-MM-DD HH:mm:ss'))
+        doorOpenFun({
+            out_user_id,
+            vmid
+        })
+        return
+    }else{
+        async.waterfall([
+            function(callback){
+                // callback(null)
+                // return res.json({
+                //     code:'200',
+                //     msg:'回调成功'
+                // })
+                let sql = 'select * from `order` where order_id="'+orderNo+'" and status=1 limit 1';
+                db.selectAll(sql, (err, result) => { // 查询是否存在
+                    if (err) {
+                        callback(new Error("system error"));
+                        return res.json({
+                            code: '500',
+                            msg: '系统错误'
+                        })
+                    }
+                    if (result.length==1) {
+                        callback(null)
+                        return res.json({
+                            code:'200',
+                            msg:'回调成功'
+                        })
+                    }else{
+                        callback(new Error("商品已经出库了"));
+                        return res.json({
+                            code:'200',
+                            msg:'回调成功'
+                        })
+                    }
+                })
+            },
+            async function(callback){
+                let _where = {order_id:orderNo};
+                let _set = {
+                    status:2,
+                };
+                db.updateData('order',_set,_where,(err,result)=>{
+                    if (err) {
+                        console.log('更新订单状态失败', moment().format('YYYY-MM-DD HH:mm:ss'))
+                    }
+                })
+            },
+            async function(callback){ // 调出货接口
+                let detailList = await getDBList(orderNo)
+                // console.log('detailList.length===',detailList)
+                for (let j = 0; j < detailList.length; j++) {
+                    let item=detailList[j]
+                    for (let i = 0; i < item.num; i++) {
+                        let huodaoList = await getHuoDaoList(vmid);
+                        let huodaoObj={}
+                        for (let i = 0; i < huodaoList.length; i++) {
+                            if (huodaoList[i].mcdcode==item.product_id && huodaoList[i].stocknum>0 ) {
+                                // console.log(huodaoList[i].mcdcode,'价格:',huodaoList[i].paprice ,'当前货道',huodaoList[i].pacode,'总库存', huodaoList[i].stocknum)
+                                huodaoObj['pacode']=huodaoList[i].pacode
+                                huodaoObj={...huodaoObj,...item}
+                                huodaoObj['money']=huodaoList[i].paprice
+                                // console.log('huodaoObj===============',huodaoObj)
+                                break
+                            }
                         }
-                    }
-                    // console.log('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
+                        // console.log('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
 
-                    console.log('等待商品出库')
-                    // await outProduct(account,vmid ,huodaoObj) // 调第三方下单接口
-                    try{
-                        await outProduct(account,vmid ,huodaoObj) // 调第三方下单接口
-                    } catch(err){
-                        console.log('outProduct err====',err)
-                        continue;
+                        console.log('等待商品出库',moment().format('YYYY-MM-DD HH:mm:ss'))
+                        // await outProduct(account,vmid ,huodaoObj) // 调第三方下单接口
+                        try{
+                            await outProduct(account,vmid ,huodaoObj) // 调第三方下单接口
+                        } catch(err){
+                            console.log('outProduct err====',err, moment().format('YYYY-MM-DD HH:mm:ss'))
+                            continue;
+                        }
+                        sleep(23000) // 给第三方再去调出货接口出货时间
                     }
-                    sleep(23000) // 给第三方再去调出货接口出货时间
                 }
+                // console.log('jjjjjjjjjjjjjjjjjjjjjjjjjjj')
+                // callback(null);  异步 不需要callback了
+            },
+            async function(callback){
+                let sql=`update member set isOld=1 where openid=(select openid from \`order\` where order_id='${orderNo}' )`
+                console.log('商品已出库, 更新用户为老用户',moment().format('YYYY-MM-DD HH:mm:ss'))
+                db.connection.query(sql, function (err,result) {
+                    if (err) {
+                        // console.log('系统错误',err);
+                        callback(new Error("system error"));
+                        return res.json({
+                            code:'500',
+                            msg:'系统错误'
+                        })
+                    }
+                });
             }
-            // console.log('jjjjjjjjjjjjjjjjjjjjjjjjjjj')
-            // callback(null);  异步 不需要callback了
-        },
-        async function(callback){
-            console.log('商品已出库')
-            let _where = {order_id:orderNo};
-            let _set = {
-                status:2,
-            };
-            db.updateData('order',_set,_where,(err,result)=>{
-                if (err) {
-                    console.log('system error22222')
-                }
-            })
-        },
-        async function(callback){
-            let sql=`update member set isOld=1 where openid=(select openid from \`order\` where order_id='${orderNo}' )`
-            console.log('更新用户为老用户')
-            db.connection.query(sql, function (err,result) {
-                if (err) {
-                    // console.log('系统错误',err);
-                    callback(new Error("system error"));
-                    return res.json({
-                        code:'500',
-                        msg:'系统错误'
-                    })
-                }
-            });
-        }
-    ], function(err, results){
-        if (err) {
-           console.log('err err err',err);
-        }else{
-            console.log('results',results);
-        }
-    });
+        ], function(err, results){
+            if (err) {
+               console.log('err err err',err, moment().format('YYYY-MM-DD HH:mm:ss'));
+            }else{
+                console.log('results',results, moment().format('YYYY-MM-DD HH:mm:ss'));
+            }
+        });
+    }
 })
 
 
@@ -663,9 +671,9 @@ router.get('/getOrder',(req,res,next)=>{
         }
     ], function(err, results){
         if (err) {
-           console.log('err err err',err);
+           console.log('err err err',err, moment().format('YYYY-MM-DD HH:mm:ss'));
         }else{
-            console.log('results',results);
+            console.log('results',results, moment().format('YYYY-MM-DD HH:mm:ss'));
         }
     });
 })
@@ -717,9 +725,9 @@ router.post('/getShopInfo',(req,res,next)=>{
         }
     ], function(err, results){
         if (err) {
-           console.log('err err err',err);
+           console.log('err err err',err,moment().format('YYYY-MM-DD HH:mm:ss'));
         }else{
-            console.log('results',results);
+            // console.log('results',results,moment().format('YYYY-MM-DD HH:mm:ss'));
         }
     });
 })
@@ -771,9 +779,9 @@ router.get('/getMachine',(req,res,next)=>{
         }
     ], function(err, results){
         if (err) {
-           console.log('err err err',err);
+           console.log('err err err',err,moment().format('YYYY-MM-DD HH:mm:ss'));
         }else{
-            console.log('results',results);
+            // console.log('results',results);
         }
     });
 })
@@ -901,9 +909,9 @@ router.post('/signIn',(req,res,next)=>{
         }
     ], function(err, results){
         if (err) {
-           console.log('err err err',err);
+           console.log('err err err',err,moment().format('YYYY-MM-DD HH:mm:ss'));
         }else{
-            console.log('results',results);
+            // console.log('results',results);
         }
     });
 })
@@ -968,7 +976,7 @@ router.post('/getFreeProduct',(req,res,next)=>{
                 }
                 // console.log('result==',result,'signObj==',signObj)
                 if (result.length>0) {
-                    console.log('进入出货流程')
+                    console.log('进入出货流程',moment().format('YYYY-MM-DD HH:mm:ss'))
                     callback(null)
                     res.json({
                         code: '200',
@@ -1003,17 +1011,17 @@ router.post('/getFreeProduct',(req,res,next)=>{
             }
             // console.log('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
 
-            console.log('等待商品出库')
+            console.log('等待商品出库',moment().format('YYYY-MM-DD HH:mm:ss'))
             // await outProduct(account,vmid ,huodaoObj) // 调第三方下单接口
             try{
                 await outProduct(account,vmid ,huodaoObj) // 调第三方下单接口
             } catch(err){
-                console.log('outProduct err====',err)
+                console.log('outProduct err====',err,moment().format('YYYY-MM-DD HH:mm:ss'))
             }
             sleep(23000)
         },
         async function(callback){
-            console.log('商品已出库')
+            console.log('商品已出库',moment().format('YYYY-MM-DD HH:mm:ss'))
             let _where = {id:signObj.id};
             let _set = {
                 status:2
@@ -1027,9 +1035,9 @@ router.post('/getFreeProduct',(req,res,next)=>{
         },
     ], function(err, results){
         if (err) {
-           console.log('err err err',err);
+           console.log('err err err',err,moment().format('YYYY-MM-DD HH:mm:ss'));
         }else{
-            console.log('results',results);
+            // console.log('results',results);
         }
     });
 })
@@ -1038,6 +1046,10 @@ router.get('/testWaterfall',(req,res,next)=>{
     async.waterfall([
         function(callback){
             console.log('11111')
+            res.json({
+                code: '200',
+                msg: 'ok'
+            })
             callback(null,'datajjjj')
         },
         async function(data,callback){
@@ -1055,19 +1067,6 @@ router.get('/testWaterfall',(req,res,next)=>{
         },
         async function(callback){
             console.log('444')
-            let orderNo='No220409164947396146'
-            let sql=`update member set isOld=1 where openid=(select openid from \`order\` where order_id='${orderNo}' )`
-            console.log('更新用户为老用户')
-            db.connection.query(sql, function (err,result) {
-                if (err) {
-                    // console.log('系统错误',err);
-                    callback(new Error("system error"));
-                    return res.json({
-                        code:'500',
-                        msg:'系统错误'
-                    })
-                }
-            });
             res.json({
                 code: '200',
                 msg: 'ok'

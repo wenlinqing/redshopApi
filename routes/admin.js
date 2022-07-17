@@ -43,7 +43,7 @@ router.post('/adminLogin', (req, res, next) => {
     let sql=`select * from hh_merchant where mobile='` + mobile +`' limit 1`
     db.selectAll(sql, (err, result) => {
         if (err) {
-            console.log(err)
+            console.log(err,moment().format('YYYY-MM-DD HH:mm:ss'))
             return res.json({
                 code: '500',
                 msg: '系统错误'
@@ -108,7 +108,7 @@ router.post('/memberList', (req, res, next) => {
             let sql = `select * from hh_member order by create_time desc limit ` + (page-1)*pageSize +','+pageSize;
             db.selectAll(sql, (err, result) => {
                 if (err) {
-                    console.log(err)
+                    console.log(err,moment().format('YYYY-MM-DD HH:mm:ss'))
                     return res.json({
                         code: '500',
                         msg: '系统错误'
@@ -127,9 +127,9 @@ router.post('/memberList', (req, res, next) => {
         }
     ], function(err, results){
         if (err) {
-            console.log('err err err',err);
+            // console.log('err err err',err,moment().format('YYYY-MM-DD HH:mm:ss'));
         }else{
-            console.log('results',results);
+            // console.log('results',results);
         }
     });
     
@@ -162,7 +162,7 @@ router.post('/merchantList', (req, res, next) => {
     // sql = db.mysql.format(sql,req.body.user_id);// 预防SQL注入
     db.selectAll(sql, (err, result) => {
         if (err) {
-            console.log(err)
+            console.log(err,moment().format('YYYY-MM-DD HH:mm:ss'))
             return res.json({
                 code: '500',
                 msg: '系统错误'
@@ -203,7 +203,7 @@ router.post('/merchantAdd', (req, res, next) => {
     }
     db.insertData('hh_merchant', saveDate, (err, data) => {
         if (err) {
-            console.log(err)
+            console.log(err,moment().format('YYYY-MM-DD HH:mm:ss'))
             return res.json({
                 code: '500',
                 msg: '系统错误'
@@ -240,7 +240,7 @@ router.post('/merchantUpdate', (req, res, next) => {
     };
     db.updateData('hh_merchant',_set,_where,(err,result)=>{
         if (err) {
-            console.log(err)
+            console.log(err,moment().format('YYYY-MM-DD HH:mm:ss'))
             return res.json({
                 code: '500',
                 msg: '系统错误'
@@ -306,7 +306,7 @@ router.post('/withdrawList', (req, res, next) => {
             }else{
                 var sql = `select * from hh_withdraw  where mobile=${mobile} order by create_time desc limit ${(page-1)*pageSize},${pageSize}`;
             }
-            console.log(sql)
+            // console.log(sql)
             db.selectAll(sql, (err, result) => {
                 if (err) {
                     console.log(err)
@@ -328,9 +328,9 @@ router.post('/withdrawList', (req, res, next) => {
         }
     ], function(err, results){
         if (err) {
-            console.log('err err err',err);
+            // console.log('err err err',err);
         }else{
-            console.log('results',results);
+            // console.log('results',results);
         }
     });
     
@@ -356,7 +356,7 @@ router.post('/withdrawAdd', (req, res, next) => {
     }
     db.insertData('hh_withdraw', saveDate, (err, data) => {
         if (err) {
-            console.log(err)
+            console.log(err,moment().format('YYYY-MM-DD HH:mm:ss'))
             return res.json({
                 code: '500',
                 msg: '系统错误'
@@ -433,7 +433,7 @@ router.post('/orderList', (req, res, next) => {
             // console.log('sql======',sql)
             db.selectAll(sql,(err,result)=>{
                 if (err) {
-                    console.log(err)
+                    console.log(err,moment().format('YYYY-MM-DD HH:mm:ss'))
                     return res.json({
                         code:'500',
                         msg:'系统错误2'
@@ -452,9 +452,9 @@ router.post('/orderList', (req, res, next) => {
         }
     ], function(err, results){
         if (err) {
-            console.log('err err err',err);
+            // console.log('err err err',err);
         }else{
-            console.log('results',results);
+            // console.log('results',results);
         }
     });
 })

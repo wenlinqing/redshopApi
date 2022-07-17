@@ -42,7 +42,7 @@ app.use(expressJWT({
     '/redapi/payCallback',
     '/redapi/productList',
     '/redapi/getMachine',
-    // '/redapi/wx',
+    '/redapi/testWaterfall',
     '/redapi/signActive',
     // '/redapi/signIn',
     // '/redapi/getFreeProduct',
@@ -50,6 +50,19 @@ app.use(expressJWT({
     '/redapi/v2/adminLogin',
     '/redapi/v2/merchantList',
     
+    '/redapi/v2/checkToken',
+    '/redapi/v2/openDeviceDoor',
+    '/redapi/v2/wxgetOpenId',
+    '/redapi/v2/login',
+    '/redapi/v2/getDeviceStatus',
+    '/redapi/v2/hahaDeviceCallBack',
+    '/redapi/v2/hahaOrderCallBack',
+    // '/redapi/v2/getDeviceStatus',
+    // '/redapi/v2/getDeviceStatus',
+    // '/redapi/v2/getDeviceStatus',
+    // '/redapi/v2/getDeviceStatus',
+    // '/redapi/v2/getDeviceStatus',
+
   ]
 }))
 
@@ -74,12 +87,15 @@ app.use(function (error, req, res, next) {
 
 
 global.HOST='https://www.hj19800.com'
+global.tokenObj={
+    "access_token": "16edf695b24ce679f8477d1c227503caa4bca993",
+    "exprire": 1659247301,
+    "ticket": "5f0f442c8c63cee7dfd2f23da60e7baa"
+}
 
-
-app.use('/redapi/v2', require('./routes/index'));
-app.use('/redapi/v2/admin', require('./routes/admin'));
-// app.use('/redapi/v2', require('./routes/v2_index'));
-
+app.use('/redapi', require('./routes/index'));
+app.use('/redapi/admin', require('./routes/admin'));
+app.use('/redapi/v2', require('./routes/v2_index'));
 
 
 

@@ -307,6 +307,90 @@ router.get('/getMachineInfo',(req,res,next)=>{
     })
 })
 
+// 用户开门操作
+/*router.post('/openDeviceDoor', (req, res, next) => {
+    let out_user_id = req.body.user_id||'';
+    let device_id = req.body.device_id||'';
+    if (out_user_id==''||device_id=='') {
+        return res.json({
+            code: '444',
+            msg: '参数错误'
+        })
+    }
+    // console.log('aaaaaaaaa')
+	request.post({
+		url:`http://api.hahabianli.com/door/open`,
+		form:{
+			access_token:global.tokenObj.access_token,
+			device_id,
+			out_user_id,
+			open_type:'OUT'
+		}
+	}, (error, response, body)=>{
+		let jsons = JSON.parse(body) // body是string类型
+		if(jsons.code === 1){
+			// {
+			//    "code": 1,
+			//    "info": "success",
+			//    "data": {
+			//       "activity_id": "1801081740422435",
+			//       "user_id": "01081609535A532751AB2DB"
+			//    }
+			// }
+			return res.json({
+		        code: '200',
+		        // data:jsons.data,
+		        msg: 'ok'
+		    })
+		}else{
+			return res.json({
+				code,
+				msg: jsons.info //{ code: 4000, info: '[ 用户编号 ] 参数格式不对!' }
+			})
+		}
+	})
+})*/
+
+// 设备和锁的状态查询 
+/*router.post('/checkDiviceStatus', (req, res, next) => {
+    let device_id = req.body.device_id||'';
+    if (device_id=='') {
+        return res.json({
+            code: '444',
+            msg: '参数错误'
+        })
+    }
+	request.post({
+		url:`http://api.hahabianli.com/device/checkstatus`,
+		form:{
+			access_token:global.tokenObj.access_token,
+			device_id
+		},
+		json:true
+	}, (error, response, body)=>{
+		// let jsons = JSON.parse(body) // body是string类型
+		console.log('body===dddd', body)
+		if(body.code === 1){
+			return res.json({
+		        code: '200',
+		        data:jsons.data,
+		        msg: 'ok'
+		    })
+			// {
+			//   code: 1,
+			//   info: 'SUCCESS',
+			//   data: { device_id: 'B30874', status: 2, device_status: '1' }
+			// }
+		    //status 1.开 2.关3.无法获取4.异常
+		    //device_status 1.正常 2.冻结3.学习4.异常
+		}else{
+			return res.json({
+				code,
+				msg: body.info
+			})
+		}
+	})
+})*/
 
 // 设备可售商品列表
 router.get('/getProductsListByDeviceId', (req, res, next) => {
@@ -423,20 +507,82 @@ router.post('/hahaDeviceCallBack', (req, res, next) => {
 	// if (sign === signMd5(data)) {
 	res.send('success')
 
-	/*if (data.status === 'CLOSED' && data.open_type ==='OUT') {
-		setTimeout(()=>{
-			let sql = `select out_order_no,status from hh_order where activity_id=${data.activity_id} limit 1`;
-            db.selectAll(sql, (err, result) => { // 查询是否存在
-                if (err) {
-                    callback(new Error("system error"));
-                    console.log('查询hh_order失败',moment().format('YYYY-MM-DD HH:mm:ss'))
-                }
-                if (result.length!=0 && result[0].status==0) {
-                    cancelOrder(result[0].out_order_no)
-                }
-            })
-		},60000)
-	}*/
+		/*if (data.status === 'CLOSED') {
+			async.waterfall([
+		        function(callback){
+		            let sql = `select activity_id from hh_order where activity_id=${data.activity_id} limit 1`;
+		            db.selectAll(sql, (err, result) => { // 查询是否存在
+		                if (err) {
+		                    callback(new Error("system error"));
+		                    console.log('查询hh_order失败',moment().format('YYYY-MM-DD HH:mm:ss'))
+		                }
+		                if (result.length==0) {
+		                    callback(null, '')
+		                }else{
+		                    callback(null, result[0].activity_id)
+		                }
+		            })
+		        },
+		        function(activity_id, callback){
+		        	console.log('result[0].activity_id==', activity_id,moment().format('YYYY-MM-DD HH:mm:ss'))
+		        	if (activity_id == '') {
+		        		let saveDate = {
+				            activity_id: data.activity_id,
+				            user_id: data.out_user_id,// 自己系统的用户id
+				            haha_user_id: data.user_id,// 哈哈系统的用户id
+				            device_id:data.device_id,
+				            create_time: moment(Number(data.create_time)*1000).format('YYYY-MM-DD HH:mm:ss')
+				        }
+				        db.insertData('hh_order', saveDate, (err, data) => {
+				            if (err) {
+				            	callback(new Error("hh_order订单创建失败="+data.activity_id));
+				                console.log('hh_order订单创建失败',data.activity_id,moment().format('YYYY-MM-DD HH:mm:ss'))
+				            }
+				            callback(null);
+				        })
+		        	}else{
+			            let _where = {activity_id: activity_id};
+			            let _set = {
+			                user_id: data.out_user_id,// 自己系统的用户id
+				            haha_user_id: data.user_id,// 哈哈系统的用户id
+				            device_id:data.device_id,
+				            create_time: moment(Number(data.create_time)*1000).format('YYYY-MM-DD HH:mm:ss')
+			            };
+			            db.updateData('hh_order',_set,_where,(err,result)=>{
+			                if (err) {
+			                	callback(new Error("hh_order 红包转账后 订单创建失败="+data.activity_id));
+			                    console.log('hh_order 红包转账后 订单创建失败',moment().format('YYYY-MM-DD HH:mm:ss'))
+			                }
+			                callback(null, '红包转账后 订单创建成功');
+			            })
+		        	}
+		        }
+	        ], function(err, results){
+		        if (err) {
+		           console.log('err err err',err,moment().format('YYYY-MM-DD HH:mm:ss'));
+		        }else{
+		            console.log('results',results,moment().format('YYYY-MM-DD HH:mm:ss'));
+		        }
+		    });
+		}*/
+
+		/*if (data.status === 'CLOSED' && data.open_type ==='OUT') {
+			setTimeout(()=>{
+				let sql = `select out_order_no,status from hh_order where activity_id=${data.activity_id} limit 1`;
+	            db.selectAll(sql, (err, result) => { // 查询是否存在
+	                if (err) {
+	                    callback(new Error("system error"));
+	                    console.log('查询hh_order失败',moment().format('YYYY-MM-DD HH:mm:ss'))
+	                }
+	                if (result.length!=0 && result[0].status==0) {
+	                    cancelOrder(result[0].out_order_no)
+	                }
+	            })
+			},60000)
+		}*/
+	// }else{
+	// 	res.send('fail')
+	// }
 })
 
 function cancelOrder(out_order_no){
@@ -453,21 +599,7 @@ function cancelOrder(out_order_no){
 		json:true,
 		headers,
 	}, (error, response, body)=>{
-		console.log('jsons===',  body)
-		if (verifyWxSign(response, JSON.stringify(body)) && body?.out_order_no) {
-			console.log('订单已失效==',verifyWxSign(response, JSON.stringify(body)), moment().format('YYYY-MM-DD HH:mm:ss'))
-
-			let _where = {out_order_no:out_order_no};
-	        let _set = {
-	            status:3
-	        };
-	        db.updateData('hh_order',_set,_where,(err,result)=>{
-	            if (err) {
-	                console.log('system error22222')
-	            }
-	            console.log('订单已取消 out_order_no=', out_order_no)
-	        })
-		}
+		console.log('订单已失效==',verifyWxSign(response, JSON.stringify(body)), moment().format('YYYY-MM-DD HH:mm:ss'))
 	})
 }
 
@@ -478,153 +610,116 @@ router.post('/hahaOrderCallBack', (req, res, next) => {
 	let {sign} = data
 	console.log(sign === signMd5(data),'haha Order CallBack',data,'\n')
 	// if (sign === signMd5(data)) {
-	res.send('success')
-	let subDataObj=null
-	let valAry = []
-	async.waterfall([
-		function(callback){// 查询是否已存在
-        	let sql = `select activity_id from hh_order where activity_id='${data.activity_id}' limit 1`;
-            db.selectAll(sql, (err, result) => { 
-                if (err) {
-                    console.log(err,'查询hh_order失败4',moment().format('YYYY-MM-DD HH:mm:ss'))
-                    return callback(new Error("system error"));
-                }
-                if (result.length!=0) {
-                    callback(null)
-                }else{
-                    return callback(new Error("查询hh_order 订单不存在",data.activity_id));
-                }
-            })
-        },
-        function(callback){// 更新订单 商品信息 及 状态
-            let _where = {activity_id:data.activity_id};
-	        let _set = {
-	            order_id:data.order_id,
-	            order_name:data.order_name,
-	            order_money:data.order_money,
-	            status:1
-	        };
-	        db.updateData('hh_order',_set,_where,(err,result)=>{
-	            if (err) {
-	                console.log('hh_order 数据更新失败222',moment().format('YYYY-MM-DD HH:mm:ss'))
-	                return callback(new Error("hh_order 数据更新失败222"));
-	                
-	            }
-	            callback(null)
-	        })
-        },
-        function(callback){
-            JSON.parse(data.order_goods).forEach((item,index)=>{
-				valAry.push([ data.order_id,item['code'],item['id'],item['product_name'],item['product_num'],item['price'] ])
-			})
-            let sql = 'INSERT INTO hh_order_detail(order_id, code, product_id, product_name, product_num, price) VALUES ?'; //批量插入数据
-            // console.log('sql====', sql)
-            db.connection.query(sql, [valAry], function (err3, rows, fields) {
-                if (err3) {
-                    console.log('errrrrr',err3)
-                    return callback(new Error("system error2"));
-                }else{
-                	callback(null);
-                }
-            });
-        },
-        function(callback){
-        	console.log('此处调结算  完结支付分订单接口')
-        	// 先查询订单类型
-        	let sql = `select out_order_no,buyWay,red_money from hh_order where activity_id='${data.activity_id}' limit 1`;
-            db.selectAll(sql, (err, result) => { // 查询是否存在
-                if (err) {
-                    console.log(err,'查询hh_order失败4',moment().format('YYYY-MM-DD HH:mm:ss'))
-                    return callback(new Error("system error"));
-                }
-                if (result.length!=0) {
-                    callback(null)
-                    subDataObj= result[0]
-                }else{
-                    return callback(new Error("查询hh_order失败5"));
-                }
-            })
-        },
-        function(callback){// 查询对应机器是否有 红包转账兑换的商品
-        	let sql = `select product_id from hh_product where device_id='${data.device_id}' limit 1`;
-            db.selectAll(sql, (err, result) => { 
-                if (err) {
-                    console.log(err,'查询hh_order失败4',moment().format('YYYY-MM-DD HH:mm:ss'))
-                    return callback(new Error("system error"));
-                }
-                if (result.length==0) {
-                    callback(null,'') // 没有红包转账兑换的商品
-                }else{
-                    callback(null,result[0].product_id)
-                }
-            })
-        },
-        function(product_id,callback){
-        	let total_amount = data.order_money*100
-        	let post_discounts=[]
-        	let hasRed=false
-        	if (product_id!='') {
-        		for(let oss of valAry){ // ['2207301259047062', 'hjdywcdm500g','26019', '韩家大院五常大米500g', 1, 10]
-	        		if (oss.includes(product_id)) {
-	        			hasRed=true;
-	        			break
-	        		}
+		res.send('success')
+
+		async.waterfall([
+	        function(callback){
+	            let _where = {activity_id:data.activity_id};
+		        let _set = {
+		            order_id:data.order_id,
+		            order_name:data.order_name,
+		            order_money:data.order_money,
+		            status:1
+		        };
+		        db.updateData('hh_order',_set,_where,(err,result)=>{
+		            if (err) {
+		                console.log('hh_order 数据更新失败222',moment().format('YYYY-MM-DD HH:mm:ss'))
+		                callback(new Error("hh_order 数据更新失败222"));
+		                return
+		            }
+		            callback(null)
+		        })
+	        },
+	        function(callback){
+	        	let valAry = []
+	            JSON.parse(data.order_goods).forEach((item,index)=>{
+    				valAry.push([ data.order_id, item['code'], item['product_name'], item['product_num'], item['price'] ])
+				})
+
+	            let sql = 'INSERT INTO hh_order_detail(order_id, code, product_name, product_num, price) VALUES ?'; //批量插入数据
+	            // console.log('sql====', sql)
+	            db.connection.query(sql, [valAry], function (err3, rows, fields) {
+	                if (err3) {
+	                    callback(new Error("system error2"));
+	                    console.log('errrrrr',err3)
+	                    return
+	                }else{
+	                	callback(null);
+	                }
+	            });
+	        },
+	        function(callback){
+	        	console.log('此处调结算  完结支付分订单接口')
+	        	// 先查询订单类型
+	        	let sql = `select out_order_no,buyWay from hh_order where activity_id='${data.activity_id}' limit 1`;
+	            db.selectAll(sql, (err, result) => { // 查询是否存在
+	                if (err) {
+	                    callback(new Error("system error"));
+	                    console.log(err,'查询hh_order失败4',moment().format('YYYY-MM-DD HH:mm:ss'))
+	                    return
+	                }
+	                if (result.length!=0) {
+	                    callback(null, result[0])
+	                }else{
+	                    callback(new Error("查询hh_order失败5"));
+	                }
+	            })
+	        },
+	        function(subObj, callback){
+	        	let total_amount = data.order_money*100
+	        	let post_discounts=[]
+	        	if (subObj.buyWay == 'red') {
+	        		total_amount -= 50*0.2 // 每包大米 50红包=10元
+	        		post_discounts.push({
+	        			"name":"红包转账购物商品",
+	        			"description":"不与参与扣费",
+	        			"amount":1000,
+	        		})
+	        		total_amount -= 1000
 	        	}
-        	}
-        	if (subDataObj.buyWay == 'red' && hasRed) {
-        		total_amount -= subDataObj.red_money*0.2*100 // 每包大米 50红包=10元 转成分
-        		post_discounts.push({
-        			"name":"红包转账购物商品",
-        			"description":"不与参与扣费",
-        			"amount":subDataObj.red_money*0.2*100, // 转成分
-        		})
-        	}
-        	console.log('valAry==',valAry)
-	      	console.log(subDataObj, '是否有红包转账兑换的商品==',hasRed,post_discounts,moment().format('YYYY-MM-DD HH:mm:ss'))
+	        	let post_payments=JSON.parse(data.order_goods).map(item=>{
+	        		return {
+	        			"name": item.product_name,
+	        			"amount": item.price*100,
+	        		}
+	        	})
 
-        	let post_payments=JSON.parse(data.order_goods).map(item=>{
-        		return {
-        			"name": item.product_name,
-        			"amount": item.money*100,// 单个商品小计金额 转成分
-        		}
-        	})
+	        	console.log('应付金额total_amount=',total_amount,'post_payments==',JSON.stringify(post_payments))
 
-        	console.log('应付金额total_amount=',total_amount,'post_payments==',JSON.stringify(post_payments))
-
-            let budyData={
-				"appid":appid,
-				"service_id":global.MCHOBJ.service_id,
-				"time_range":{
-					"end_time":moment().format('YYYYMMDDHHmmss') 
-					// 创建订单未填写服务结束时间，则完结的时候，服务结束时间必填
-				},
-				post_discounts,
-				post_payments,
-				total_amount
-			}
-			console.log('budyData====',budyData)
-			let headers= wxRequestHeader('POST',`/v3/payscore/serviceorder/${subDataObj.out_order_no}/complete`,JSON.stringify(budyData))
-			request.post({
-				url:`https://api.mch.weixin.qq.com/v3/payscore/serviceorder/${subDataObj.out_order_no}/complete`,
-				body:budyData,
-				json:true,
-				headers,
-			}, (error, response, body)=>{
-				if (body.state === 'DOING') {
-					// console.log('支付完成 verifyWxSign(response, body)',verifyWxSign(response, JSON.stringify(body)))
-					console.log('支付完成 verifyWxSign(response, body)', body)
-				}else{
-					console.log(subDataObj.out_order_no,'支付错误信息=',body, moment().format('YYYY-MM-DD HH:mm:ss'))
+	            let budyData={
+					"appid":appid,
+					"service_id":global.MCHOBJ.service_id,
+					"time_range":{
+						"end_time":moment().format('YYYYMMDDHHmmss') 
+						// 创建订单未填写服务结束时间，则完结的时候，服务结束时间必填
+					},
+					post_discounts,
+					post_payments,
+					total_amount
 				}
-			})
-        },
-    ], function(err, results){
-        if (err) {
-           console.log('err err err',err,moment().format('YYYY-MM-DD HH:mm:ss'));
-        }else{
-            console.log('results',results,moment().format('YYYY-MM-DD HH:mm:ss'));
-        }
-    });
+				console.log('budyData====',budyData)
+				let headers= wxRequestHeader('POST',`/v3/payscore/serviceorder/${subObj.out_order_no}/complete`,JSON.stringify(budyData))
+				request.post({
+					url:`https://api.mch.weixin.qq.com/v3/payscore/serviceorder/${subObj.out_order_no}/complete`,
+					body:budyData,
+					json:true,
+					headers,
+				}, (error, response, body)=>{
+					if (body.state === 'DOING') {
+						// console.log('支付完成 verifyWxSign(response, body)',verifyWxSign(response, JSON.stringify(body)))
+						console.log('支付完成 verifyWxSign(response, body)', body)
+					}else{
+						console.log(subObj.out_order_no,'支付错误信息=',body, moment().format('YYYY-MM-DD HH:mm:ss'))
+					}
+				})
+	        },
+	    ], function(err, results){
+	        if (err) {
+	           console.log('err err err',err,moment().format('YYYY-MM-DD HH:mm:ss'));
+	        }else{
+	            console.log('results',results,moment().format('YYYY-MM-DD HH:mm:ss'));
+	        }
+	    });
 	// }else{
 	// 	res.send('fail')
 	// }
@@ -738,6 +833,61 @@ router.post('/wxPayCallBack', async (req, res, next) => {
 					"message": "成功"
 	            })
 	        })
+
+			/*async.waterfall([
+		        function(callback){ // 本系统  查询设备添加的 红包兑换 商品价格
+		            let sql = `select redPrice from hh_product where device_id='${attach[1]}'`;
+		            db.selectAll(sql, (err, result) => { // 查询是否存在
+		                if (err) {
+		                    callback(new Error("system error"));
+		                    console.log('查询hh_order失败222222',moment().format('YYYY-MM-DD HH:mm:ss'))
+		                    return
+		                }
+		                if (result.length!=0 && result[0].status==1) { // 对未支付的订单 更新信息  防止微信重复推送
+		                	resultObj.device_id=result[0].device_id
+		                    callback(null)
+		                }else{
+		                    callback(new Error("hh_order 数据更新失败333"));
+		                    return res.send({
+				            	"code": "SUCCESS",
+		    					"message": "成功"
+				            })
+		                }
+		            })
+		        },
+		        function(hahData,callback){
+		            let saveDate = {
+			            out_order_no: resultObj.out_order_no,
+			            activity_id: hahData.activity_id,
+			            user_id: attach[0],
+			            haha_user_id: hahData.user_id,
+			            device_id: attach[1],
+			            create_time: moment(dataObj.create_time).format('YYYY-MM-DD HH:mm:ss') // 创建支付分订单 时间
+			        }
+			        // if (attach[2] === 'red') {
+			        // 	saveDate.buyWay='red'
+			        // 	saveDate.red_money=50
+			        // }
+			        db.insertData('hh_order', saveDate, (err, datas) => {
+			            if (err) {
+			            	callback(new Error("hh_order微信支付分订单创建失败="+hahData.activity_id));
+			                console.log('err====',err)
+			                return
+			            }
+			            callback(null,'创建微信支付分订单 success');
+			            res.send({
+			            	"code": "SUCCESS",
+	    					"message": "成功"
+			            })
+			        })
+		        },
+		    ], function(err, results){
+		        if (err) {
+		           console.log('err err err',err,moment().format('YYYY-MM-DD HH:mm:ss'));
+		        }else{
+		            console.log('results',results,moment().format('YYYY-MM-DD HH:mm:ss'));
+		        }
+		    });*/
 		}
 	    return
 	}
@@ -781,7 +931,7 @@ router.post('/wxPayCallBack', async (req, res, next) => {
 	        },
 	        function(callback){
 	        	var updateSql = `update hh_merchant set totalMoney=totalMoney+${(resultObj.total_amount)/100} where machine_id='${resultObj.device_id}'`;
-	        	// console.log('updateSql==',updateSql)
+	        	console.log('updateSql==',updateSql)
 
 				db.connection.query(updateSql, (error, results) => {
 					if (error) {

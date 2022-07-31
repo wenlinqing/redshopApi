@@ -51,17 +51,16 @@ app.use(expressJWT({
     '/redapi/v2/merchantList',
     
     '/redapi/v2/checkToken',
-    '/redapi/v2/openDeviceDoor',
     '/redapi/v2/wxgetOpenId',
     '/redapi/v2/login',
     '/redapi/v2/getDeviceStatus',
     '/redapi/v2/hahaDeviceCallBack',
     '/redapi/v2/hahaOrderCallBack',
+    '/redapi/v2/wxPayCallBack',
+    '/redapi/v2/createWxOrder',
     // '/redapi/v2/getDeviceStatus',
-    // '/redapi/v2/getDeviceStatus',
-    // '/redapi/v2/getDeviceStatus',
-    // '/redapi/v2/getDeviceStatus',
-    // '/redapi/v2/getDeviceStatus',
+    '/redapi/v2/getProductsListByDeviceId',
+    '/redapi/v2/testWxCertificates',
 
   ]
 }))
@@ -92,6 +91,21 @@ global.tokenObj={
     "exprire": 1659247301,
     "ticket": "5f0f442c8c63cee7dfd2f23da60e7baa"
 }
+
+// global.appid=''
+// global.appid=''
+// global.appid=''
+global.MCHOBJ={
+    mchid: '1626826768',
+    serial_no: '29C857748C843AE2CEF2F4BD1C54195042908695',
+    service_id: '00004000000000165709643597727438',
+    APIv2: 'C8FtQyLF35dYu6XFajbISvR82p4DPWwP',
+    APIv3: 'vODZxv72pSR3RGslTJkKkmFdJgjqtagz'
+}
+
+
+
+
 
 app.use('/redapi', require('./routes/index'));
 app.use('/redapi/admin', require('./routes/admin'));

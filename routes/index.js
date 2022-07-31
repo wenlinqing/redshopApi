@@ -355,6 +355,7 @@ router.post('/createOrder',(req,res,next)=>{
             db.insertData('order', saveDate, (err, data) => {
                 if (err) {
                     callback(new Error("system error1"));
+                    console.log('err==',err,moment().format('YYYY-MM-DD HH:mm:ss'))
                     return res.json({
                         code: '500',
                         msg: '系统错误'
@@ -457,11 +458,11 @@ function doorOpenFun(ooo){
             device_id: ooo.vmid,
             out_user_id: ooo.out_user_id,
             open_type:'OUT'
-        }
+        },
+        json:true
     }, (error, response, body)=>{
-        let jsons = JSON.parse(body) // body是string类型
-        if(jsons.code === 1){
-            console.log('红包转账后，开门操作--成功',moment().format('YYYY-MM-DD HH:mm:ss'))
+        if(body.code === 1){
+            // console.log('红包转账后，开门操作--成功',moment().format('YYYY-MM-DD HH:mm:ss'))
             /*{
                "code": 1,
                "info": "success",
@@ -470,21 +471,23 @@ function doorOpenFun(ooo){
                   "user_id": "01081609535A532751AB2DB"
                }
             }*/
-            let saveDate = {
-                activity_id: jsons.data.activity_id,
-                red_money: 50
-            }
-            db.insertData('hh_order', saveDate, (err, data) => {
+            let _where = {out_order_no: ooo.out_order_no};
+            let _set = {
+                haha_user_id: body.data.user_id,
+                activity_id: body.data.activity_id,
+            };
+            db.updateData('hh_order',_set,_where,(err,result)=>{
                 if (err) {
-                    callback(new Error("红包转账后hh_order订单创建失败="+data.activity_id, moment().format('YYYY-MM-DD HH:mm:ss')));
-                    console.log('红包转账后hh_order订单创建失败',data.activity_id,moment().format('YYYY-MM-DD HH:mm:ss'))
+                    // callback(new Error("hh_order 红包转账后 订单创建失败="+data.activity_id));
+                    console.log('hh_order 红包转账后 订单更新失败',moment().format('YYYY-MM-DD HH:mm:ss'))
                 }
-                // callback(null,productList);
+                console.log('红包转账后，开门操作--成功  订单更新成功',moment().format('YYYY-MM-DD HH:mm:ss'))
+                // callback(null, '红包转账后 订单创建成功');
             })
             return
         }
-        if (jsons.code === 3003) {
-            console.log('红包转账后，开门操作--失败失败 网络错误', jsons)
+        if (body.code === 3003) {
+            console.log('红包转账后，开门操作--失败失败 网络错误', body)
             console.log('开门操作--失败失败，重新开门',moment().format('YYYY-MM-DD HH:mm:ss'))
             doorOpenFun(ooo)
         }
@@ -507,10 +510,12 @@ router.get('/payCallback',(req,res,next)=>{
             msg:'回调成功'
         })
         let out_user_id = orderNo.split('-')[0];
-        console.log('红包转账回调参数', orderNo, vmid, out_user_id, moment().format('YYYY-MM-DD HH:mm:ss'))
+        let out_order_no = orderNo.split('-')[1]
+        console.log('红包转账回调参数', orderNo, vmid, moment().format('YYYY-MM-DD HH:mm:ss'))
         doorOpenFun({
             out_user_id,
-            vmid
+            vmid,
+            out_order_no
         })
         return
     }else{
@@ -768,6 +773,8 @@ router.get('/getMachine',(req,res,next)=>{
             let timestamp = moment().add(-2, 'minutes').format('YYYYMMDDHHmmss')
             let sign = md5('appid='+config.appid+'&timestamp='+timestamp+'&vmid='+vmid+'&secret='+config.secret).toUpperCase()
             request('http://soft.kivend.net/vm/query_vminfolist?appid='+config.appid+'&timestamp='+timestamp+'&vmid='+vmid+'&sign='+sign, (error, response, body)=>{
+                // console.log(typeof(body),'body==',body)
+                //string {"ret":"0","count":1,"itemlist":[{"vmid":"5822060001","vmcode":"5822060001","vmname":"微厅甘肃嘉峪关雒秀玲店","dpaddress":"甘肃省嘉峪关市体育大道东526-3号万鑫旺地百货商行","netstatus":"1","doorstatus":"0","tmpvalue":"8","custcode":"","dptypecode":"","ipaddress":"39.144.4.218","latitude":"","longitude":""}]}
                 let itemObj = JSON.parse(body).itemlist[0]
                 callback(null,'ok');
                 return res.json({
